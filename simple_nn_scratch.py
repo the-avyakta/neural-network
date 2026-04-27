@@ -1,18 +1,75 @@
 import numpy as np
-import pandas as pd
 from sklearn.datasets import fetch_openml
-from sklearn.preprocessing import StandardScaler
 
 data = fetch_openml('titanic', version=1, as_frame=True, parser='auto')
 df = data.frame
-df['sex'] = df['sex'].map({'male': 0, 'female': 1})
+df['sex'] = df['sex'].map({'male': 0, 'female': 1}).astype(int)
 df = df[['pclass', 'sex', 'age', 'survived']].dropna()
 X_raw  = df.drop('survived', axis=1)
 
 #scaling 
-scaler = StandardScaler()
+
+class ScratchScaler():
+
+    def __init__(self):
+        self.means = None
+        self.stds = None
+    
+    def fit_transform(self, x):
+        data = x.copy()
+
+        self.means = data.mean(axis=0)
+        self.stds = np.std(data,axis=0)
+        z_Score = (data-self.means)/self.stds
+        return z_Score
+
+
+
+scaler = ScratchScaler()
 X = scaler.fit_transform(X_raw)
 y = df['survived'].astype(float).values.reshape(-1,1)
+
+def train_test_split(X,y, test_size=0.2, random_state=42, stratify=y):
+    np.random.seed(random_state)
+    # falt y, find the index, shuffle the index, calculte test_size_len, seprate train and test 
+    y_flat = stratify.flatten() if hasattr(stratify, 'flatten') else np.array(stratify)
+    idx1 = np.where(y==1)[0]
+    idx0 = np.where(y==0)[0]
+
+    def split_idx(indices):
+        np.random.shuffle(indices)
+        test_set_len = int(len(indices)*test_size)
+        train = indices[test_set_len:]
+        test = indices[:test_set_len]
+        return train, test
+    
+    idx_train0, idx_test0 = split_idx(idx0)
+    idx_train1, idx_test1 = split_idx(idx1)
+
+    train_idx = np.concatenate([idx_train0, idx_train1])
+    test_idx = np.concatenate([idx_test0, idx_test1])
+
+    np.random.shuffle(train_idx)
+    np.random.shuffle(test_idx)
+
+    if hasattr(X,'iloc'):
+        X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    else:
+        X_train, X_test =  X[train_idx], X[test_idx]
+    if hasattr(y,'iloc'):
+        y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+    else:
+        y_train, y_test = y[train_idx], y[test_idx]
+
+
+
+    return  X_train, X_test, y_train, y_test
+
+
+
+
+
+x_train, x_test, y_train, y_test = train_test_split(X,y, test_size=0.2, stratify=y, random_state=42)
  
 # 1. Pick 3 features (must match the '3' in W1)
 # Make sure they are scaled! Neural nets hate raw unscaled numbers.
@@ -58,9 +115,29 @@ def bce(y,y_pred):
     return -np.mean((y*np.log(y_pred)+(1-y)*np.log(1-y_pred)))
 
 initial_loss = bce(y, y_pred)
-
 print(initial_loss)
+
+
 # def mse(x,y):
 #     return np.mean(np.sum((y-y_pred)**2))
 
 # Optimization: Update the weights (W = W - learning_rate * gradient
+
+
+# with scratch loss = 0.6931562656885067
+
+
+# mlp = MLPClassifier(
+#     hidden_layer_sizes=(4,),
+#     activation='relu',
+#     solver='adam',
+#     random_state=42,
+#     early_stopping=True,
+#     validation_fraction=0.1
+# )
+
+# mlp.fit(x_train,y_train.ravel())
+# y_pred = mlp.predict(x_test)
+
+# print( mlp.loss_)
+# with MLPClassifier = 0.6016274424484372
