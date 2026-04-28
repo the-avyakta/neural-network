@@ -1,1 +1,3 @@
-# neural-network
+# basic neural network from scratch on Titanic
+
+

@@ -19,7 +19,7 @@ class ScratchScaler():
         data = x.copy()
 
         self.means = data.mean(axis=0)
-        self.stds = np.std(data,axis=0)
+        self.stds = np.std(data,axis=0) + 1e-8
         z_Score = (data-self.means)/self.stds
         return z_Score
 
@@ -33,8 +33,8 @@ def train_test_split(X,y, test_size=0.2, random_state=42, stratify=y):
     np.random.seed(random_state)
     # falt y, find the index, shuffle the index, calculte test_size_len, seprate train and test 
     y_flat = stratify.flatten() if hasattr(stratify, 'flatten') else np.array(stratify)
-    idx1 = np.where(y==1)[0]
-    idx0 = np.where(y==0)[0]
+    idx1 = np.where(y_flat==1)[0]
+    idx0 = np.where(y_flat==0)[0]
 
     def split_idx(indices):
         np.random.shuffle(indices)
@@ -86,9 +86,9 @@ W2	        (4, 1)	Bridge from 4 neurons 1 output	        (In, Out)
 b2	        (1, 1)	One shift for the final prediction	    Matches W2 Out 
 """
 
-w1 = np.random.randn(3,4)*0.01
+w1 = np.random.randn(3,4)*np.sqrt(2/3)
 b1 = np.zeros((1,4))
-w2= np.random.randn(4,1)*0.01
+w2= np.random.randn(4,1)*np.sqrt(2/3)
 b2 = np.zeros((1,1))
 
 def sigmoid(x):
@@ -103,8 +103,7 @@ def forwardpass(x, w1, b1, w2, b2):
 
     return a2
 
-x=np.array([0.3,0.5,0.8])
-y_pred = forwardpass(x, w1, b1, w2, b2)
+y_pred = forwardpass(x_train, w1, b1, w2, b2)
 
 
 #loss function  ( BCE & MSE )
@@ -114,7 +113,7 @@ def bce(y,y_pred):
     y_pred = np.clip(y_pred, 1e-15, 1 - 1e-15 )
     return -np.mean((y*np.log(y_pred)+(1-y)*np.log(1-y_pred)))
 
-initial_loss = bce(y, y_pred)
+initial_loss = bce(y_train, y_pred)
 print(initial_loss)
 
 
@@ -125,6 +124,34 @@ print(initial_loss)
 
 
 # with scratch loss = 0.6931562656885067
+
+
+
+
+
+def backwardpass(X, y, w1, b1, w2, b2):
+    m = X.shape[0]
+
+    # forward again (needed for gradients)
+    z1 = np.dot(X, w1)+b1
+    a1 = np.maximum(0,z1)
+
+    z2 = np.dot(a1, w2)+b2
+    a2 = sigmoid(z2)
+
+    #  Backdrop
+
+    dz2 = a2 - y
+    dW2 = np.dot(a1.T, dz2) / m
+    db2 = np.sum(dz2, axis=0, keepdims=True) / m
+
+    da1 = np.dot(dz2, w2.T)
+    dz1 = da1 * (z1 > 0)
+
+    dW1 = np.dot(X.T, dz1) / m
+    db1 = np.sum(dz1, axis=0, keepdims=True) / m
+
+    return dW1, db1, dW2, db2
 
 
 # mlp = MLPClassifier(
@@ -141,3 +168,27 @@ print(initial_loss)
 
 # print( mlp.loss_)
 # with MLPClassifier = 0.6016274424484372
+
+lr = 0.01
+epochs = 1000
+
+for i in range(epochs):
+    # forward
+    z1 = np.dot(x_train, w1) + b1
+    a1 = np.maximum(0, z1)
+    z2 = np.dot(a1, w2) + b2
+    a2 = sigmoid(z2)
+
+    loss = bce(y_train, a2)
+
+    # backward
+    dW1, db1, dW2, db2 = backwardpass(x_train, y_train, w1, b1, w2, b2)
+
+    # update
+    w1 -= lr * dW1
+    b1 -= lr * db1
+    w2 -= lr * dW2
+    b2 -= lr * db2
+
+    if i % 100 == 0:
+        print(f"Loss at epoch {i}: {loss}")
