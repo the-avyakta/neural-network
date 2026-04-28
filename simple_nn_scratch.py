@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.datasets import fetch_openml
+from sklearn.neural_network import MLPClassifier
 
 data = fetch_openml('titanic', version=1, as_frame=True, parser='auto')
 df = data.frame
@@ -113,7 +114,7 @@ def bce(y,y_pred):
     y_pred = np.clip(y_pred, 1e-15, 1 - 1e-15 )
     return -np.mean((y*np.log(y_pred)+(1-y)*np.log(1-y_pred)))
 
-initial_loss = bce(y_train, y_pred)
+initial_loss = bce(x_train, y_pred)
 print(initial_loss)
 
 
@@ -123,7 +124,7 @@ print(initial_loss)
 # Optimization: Update the weights (W = W - learning_rate * gradient
 
 
-# with scratch loss = 0.6931562656885067
+
 
 
 
@@ -154,20 +155,23 @@ def backwardpass(X, y, w1, b1, w2, b2):
     return dW1, db1, dW2, db2
 
 
-# mlp = MLPClassifier(
-#     hidden_layer_sizes=(4,),
-#     activation='relu',
-#     solver='adam',
-#     random_state=42,
-#     early_stopping=True,
-#     validation_fraction=0.1
-# )
+mlp = MLPClassifier(
+    hidden_layer_sizes=(4,),
+    activation='relu',
+    solver='adam',
+    random_state=42,
+    early_stopping=True,
+    validation_fraction=0.1
+)
 
-# mlp.fit(x_train,y_train.ravel())
-# y_pred = mlp.predict(x_test)
+mlp.fit(x_train,y_train.ravel())
+y_predmlp = mlp.predict(x_test)
 
-# print( mlp.loss_)
-# with MLPClassifier = 0.6016274424484372
+print( mlp.loss_)
+# with MLPClassifier = 0.599485453302073
+# with scratch loss =  0.4882783533034546
+print("#################################################")
+
 
 lr = 0.01
 epochs = 1000
@@ -192,3 +196,11 @@ for i in range(epochs):
 
     if i % 100 == 0:
         print(f"Loss at epoch {i}: {loss}")
+
+y_pred = forwardpass(x_test, w1, b1, w2, b2)
+y_pred = (y_pred > 0.5).astype(int)
+def accuracy(y_test, y_pred):
+    return(np.mean(y_test.flatten() == y_pred.flatten()))
+
+print(f"Scratch Accuracy: {accuracy(y_test, y_pred)}")
+print(f"MLPC Accuracy: {accuracy(y_test, y_predmlp)}")
