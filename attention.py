@@ -40,16 +40,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, d_model, num_heads):
+    def __init__(self, d_model, num_heads):  # d_model = size of each word vector & num_heads = number of parallel attentions
         super().__init__()
         self.num_heads = num_heads
-        self.head_dim = d_model // num_heads
+        self.head_dim = d_model // num_heads # Each attention gets how much word vector 
         
         assert d_model % num_heads == 0, "d_model must be divisible by num_heads"
         
         # Linear layers for Q, K, V
-        self.q_linear = nn.Linear(d_model, d_model)
-        self.k_linear = nn.Linear(d_model, d_model)
+        self.q_linear = nn.Linear(d_model, d_model) # “Take numbers X → mix them → output Y size, different values”
+        self.k_linear = nn.Linear(d_model, d_model) # y = Wx + b
         self.v_linear = nn.Linear(d_model, d_model)
         
         # Output projection
@@ -64,8 +64,8 @@ class MultiHeadAttention(nn.Module):
         V = self.v_linear(x)
         
         # Split into heads
-        Q = Q.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
-        K = K.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
+        Q = Q.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2) #“Reshape the data, don’t change values
+        K = K.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2) # batches, words, features
         V = V.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
         
         # Scaled dot-product attention
