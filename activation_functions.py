@@ -12,7 +12,7 @@ def leakyrelu(x, alpha=0.01):
  
 
 # for 2d always keep keepdims and axis
-def softmax(x, axis=-1): #( e^(x-X_max)-/E(e^(x-X_max)) 
+def softmax(x, axis=-1): #( e^(x-X_max/ (Sum(e^(x-X_max)) )
     exps = np.exp(x - np.max(x, keepdims=True, axis=axis))
     return exps/np.sum(exps, keepdims=True, axis=axis)
 
