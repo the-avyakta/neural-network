@@ -28,15 +28,63 @@ def torch_attention(query, key, value):
 
 x = torch.randn(1, 3, 4) 
 
-output, weights = torch_attention(x, x, x)
-outputnp, weightsnp = custom_attention(x, x, x)
+# output, weights = torch_attention(x, x, x)
+# outputnp, weightsnp = custom_attention(x, x, x)
 
-print("Attention weights:\n", weights)
-print("Output shape:", output.shape)
+# print("Attention weights:\n", weights)
+# print("Output shape:", output.shape)
 
 
-print("Attention weights:\n", weightsnp)
-print("Output shape:", outputnp.shape)
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class MultiHeadAttention(nn.Module):
+    def __init__(self, d_model, num_heads):
+        super().__init__()
+        self.num_heads = num_heads
+        self.head_dim = d_model // num_heads
+        
+        assert d_model % num_heads == 0, "d_model must be divisible by num_heads"
+        
+        # Linear layers for Q, K, V
+        self.q_linear = nn.Linear(d_model, d_model)
+        self.k_linear = nn.Linear(d_model, d_model)
+        self.v_linear = nn.Linear(d_model, d_model)
+        
+        # Output projection
+        self.out = nn.Linear(d_model, d_model)
+    
+    def forward(self, x):
+        batch_size, seq_len, d_model = x.shape
+        
+        # Linear projections
+        Q = self.q_linear(x)
+        K = self.k_linear(x)
+        V = self.v_linear(x)
+        
+        # Split into heads
+        Q = Q.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
+        K = K.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
+        V = V.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
+        
+        # Scaled dot-product attention
+        scores = torch.matmul(Q, K.transpose(-2, -1)) / (self.head_dim ** 0.5)
+        attention = F.softmax(scores, dim=-1)
+        
+        out = torch.matmul(attention, V)
+        
+        # Concatenate heads
+        out = out.transpose(1, 2).contiguous().view(batch_size, seq_len, d_model)
+        
+        # Final linear layer
+        out = self.out(out)
+        
+        return out
+
+
+# print("Attention weights:\n", weightsnp)
+# print("Output shape:", outputnp.shape)
 
 """
 Attention weights:
