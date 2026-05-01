@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 import numpy as np 
+
 def custom_attention(Q, K, V):
     Q = Q.numpy()
     K = K.numpy()
