@@ -104,7 +104,7 @@ def forwardpass(x, w1, b1, w2, b2):
 
     return a2
 
-y_pred = forwardpass(x_train, w1, b1, w2, b2)
+y_pred = forwardpass(x_test, w1, b1, w2, b2)
 
 
 #loss function  ( BCE & MSE )
@@ -114,7 +114,7 @@ def bce(y,y_pred):
     y_pred = np.clip(y_pred, 1e-15, 1 - 1e-15 )
     return -np.mean((y*np.log(y_pred)+(1-y)*np.log(1-y_pred)))
 
-initial_loss = bce(x_train, y_pred)
+initial_loss = bce(x_test, y_pred)
 print(initial_loss)
 
 
@@ -168,8 +168,8 @@ mlp.fit(x_train,y_train.ravel())
 y_predmlp = mlp.predict(x_test)
 
 print( mlp.loss_)
-# with MLPClassifier = 0.599485453302073
-# with scratch loss =  0.4882783533034546
+# Scratch Accuracy: 0.7403846153846154
+# MLPC Accuracy: 0.6778846153846154
 print("#################################################")
 
 
